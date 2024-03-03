@@ -1,4 +1,6 @@
 import User from "../models/user.model.js"
+import bcrypt from "bcrypt"
+import gtokenscookies from "../utils/generateToken.js"
 export const signup = async (req,res)=>{
 try {
     const {fullname,username,password, confirmpassword, gender} = req.body;
@@ -15,6 +17,9 @@ try {
     }
 
     //Hash the password
+    const salt = await bcrypt.genSalt(10);
+    const hashedpassword = await bcrypt.hash(password, salt);
+
     //https://api.dicebear.com/7.x/lorelei/svg
 
 //https://api.dicebear.com/7.x/lorelei/svg?flip=true     receive
@@ -27,21 +32,31 @@ const girlprofilepic = `https://avatar.iran.liara.run/public/girl?username=${use
 const newUser = new User({
     fullname,
     username,
-    password,
+    password:hashedpassword,
     // confirmpassword,
     gender,
     profilepic: gender === 'male' ? boyprofilepic : girlprofilepic
 })
 
-await newUser.save()
 
-res.status(201).json({
-    _id: newUser._id,
-    username: newUser.username,
-    fullname: newUser.fullname,
-    gender: newUser.gender,
-    profilepic: newUser.profilepic
-})
+if(newUser){
+    // generate JWT token here
+
+    gtokenscookies(newUser._id, res)
+
+
+ 
+    await newUser.save()
+    res.status(201).json({
+        _id: newUser._id,
+        username: newUser.username,
+        fullname: newUser.fullname,
+        gender: newUser.gender,
+        profilepic: newUser.profilepic
+    })
+}else{
+    res.status(500).send({error:"Something went wrong"})
+}
 
 } catch (error) {
     console.log(error.message)
