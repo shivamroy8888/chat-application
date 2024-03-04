@@ -41,12 +41,10 @@ const newUser = new User({
 
 if(newUser){
     // generate JWT token here
+    gtokenscookies(newUser._id, res);
 
-    gtokenscookies(newUser._id, res)
+    await newUser.save();
 
-
- 
-    await newUser.save()
     res.status(201).json({
         _id: newUser._id,
         username: newUser.username,
@@ -64,10 +62,45 @@ if(newUser){
 }
 };
 
-export const login = (req,res)=>{
-    res.send("Login Route")
+export const login = async (req,res)=>{
+try {
+    const {username, password} = req.body;
+    const user = await User.findOne({username})
+    const ispasswordcorrect = bcrypt.compare(password, user?.password || "")
+    
+    if(!user || !ispasswordcorrect){
+        res.status(400).json({error: "Invalid username or password"})
+    }
+
+    gtokenscookies(user._id, res);
+    res.status(200).json({
+        _id: user._id,
+        fullname: user.fullname,
+        username: user.username,
+        profilepic: user.profilepic,
+    });
+
+
+    
+} catch (error) {
+    console.log(error.message)
+    res.status(500).send({error:error.message})
+    
+}
 };
 
+
+
 export const logout = (req,res)=>{
-    res.send("Logout Route")
+    
+    try {
+    res.cookie("jwt", " ", {maxAge: 0})
+    res.status(200).json({message:"Logged out successfully"})
+    
+} catch (error) {
+    console.log(error.message)
+    res.status(500).send({error:error.message})
+}
+
+
 };
